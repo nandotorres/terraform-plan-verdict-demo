@@ -31,7 +31,7 @@ jobs:
           persist-credentials: false
 
       - name: Score ${{ matrix.sim }} plan
-        uses: nandotorres/terraform-plan-verdict@main
+        uses: nandotorres/terraform-plan-verdict@v0
         with:
           plan-json: simulations/${{ matrix.sim }}.plan.json
           provider: rules

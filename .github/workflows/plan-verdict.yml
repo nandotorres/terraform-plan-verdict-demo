@@ -55,7 +55,7 @@ jobs:
           terraform show -json tfplan > plan.json
 
       - name: Score the plan
-        uses: nandotorres/terraform-plan-verdict@main
+        uses: nandotorres/terraform-plan-verdict@v0
         with:
           plan-json: infra/plan.json
           provider: rules
