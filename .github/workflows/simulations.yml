@@ -39,3 +39,29 @@ jobs:
           labels: false
           summary: true
           fail-on: none
+
+  # Proves the action also accepts `terraform plan -json` (NDJSON) output.
+  stream:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: step-security/harden-runner@351661ca32ac09a36dc5ee2d536e3128f2a3c8ed # v2.22.0
+        with:
+          disable-sudo: true
+          egress-policy: audit
+
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+
+      - name: Score an NDJSON (terraform plan -json) stream
+        uses: nandotorres/terraform-plan-verdict@v0
+        with:
+          plan-json: simulations/stream.plan.ndjson
+          provider: rules
+          comment: false
+          labels: false
+          summary: true
+          fail-on: none

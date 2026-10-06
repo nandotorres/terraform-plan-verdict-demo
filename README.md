@@ -36,9 +36,87 @@ summary — so you can see the full spectrum in one run, no Terraform required.
 | `high` | 🟠 HIGH | 70 |
 | `critical` | 🔴 CRITICAL | 88 |
 
+## Recipes
+
+### Input formats
+
+```yaml
+# terraform show -json (single JSON object)
+- run: terraform show -json tfplan > plan.json
+- uses: nandotorres/terraform-plan-verdict@v0
+  with: { plan-json: plan.json }
+
+# terraform plan -json (NDJSON stream) — no `show` step needed
+- run: terraform plan -json > plan.ndjson
+- uses: nandotorres/terraform-plan-verdict@v0
+  with: { plan-json: plan.ndjson }
+```
+
+(The [`stream` job](.github/workflows/simulations.yml) scores a committed NDJSON file to prove this works.)
+
+### AI providers (optional — require a key)
+
+```yaml
+# OpenAI
+- uses: nandotorres/terraform-plan-verdict@v0
+  with:
+    plan-json: plan.json
+    provider: openai
+    model: gpt-4o-mini
+    api-key: ${{ secrets.OPENAI_API_KEY }}
+
+# Anthropic (Claude)
+- uses: nandotorres/terraform-plan-verdict@v0
+  with:
+    plan-json: plan.json
+    provider: openai
+    base-url: https://api.anthropic.com/v1
+    model: claude-sonnet-4-5
+    api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+
+# Google Gemini
+- uses: nandotorres/terraform-plan-verdict@v0
+  with:
+    plan-json: plan.json
+    provider: openai
+    base-url: https://generativelanguage.googleapis.com/v1beta/openai
+    model: gemini-2.0-flash
+    api-key: ${{ secrets.GEMINI_API_KEY }}
+
+# Azure OpenAI (needs api-version query + api-key header)
+- uses: nandotorres/terraform-plan-verdict@v0
+  with:
+    plan-json: plan.json
+    provider: openai
+    base-url: https://my-resource.openai.azure.com/openai/deployments/gpt-4o
+    model: gpt-4o
+    provider-options: |
+      headers:
+        api-key: ${{ secrets.AZURE_OPENAI_KEY }}
+      query:
+        api-version: "2024-08-01-preview"
+
+# Local Ollama (free, no key)
+- uses: nandotorres/terraform-plan-verdict@v0
+  with:
+    plan-json: plan.json
+    provider: openai
+    base-url: http://localhost:11434/v1
+    model: llama3.1
+```
+
+### Gate merges and label PRs
+
+```yaml
+- uses: nandotorres/terraform-plan-verdict@v0
+  with:
+    plan-json: plan.json
+    comment: true
+    labels: true
+    fail-on: critical   # fail the job on a CRITICAL verdict
+```
+
 ## Notes
 
-- The workflows reference the action at `@main` so this demo works immediately. Pin to a released tag
-  (e.g. `@v1`) for real use.
-- The default provider is `rules` — free, deterministic, offline. Swap to `provider: systemone` or
-  `provider: openai` (with an `api-key`) to try AI-graded verdicts.
+- The workflows pin the action at `@v0` (the floating major tag). Pin a patch like `@v0.1.0` for stricter reproducibility.
+- The default provider is `rules` — free, deterministic, offline. The AI recipes above are optional.
