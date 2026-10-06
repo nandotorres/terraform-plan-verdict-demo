@@ -1,0 +1,9 @@
+# Terraform working files — generated in CI, never committed.
+**/.terraform/
+**/.terraform.lock.hcl
+**/terraform.tfstate
+**/terraform.tfstate.backup
+**/tfplan
+infra/plan.json
+infra/config.json
+infra/firewall.json

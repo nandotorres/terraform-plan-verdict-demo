@@ -1,0 +1,64 @@
+name: Plan Verdict
+
+on:
+  pull_request:
+    paths:
+      - "infra/**"
+
+permissions: {}
+
+concurrency:
+  group: plan-verdict-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verdict:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write # post the verdict comment and labels
+    steps:
+      - uses: step-security/harden-runner@cb605e52c26070c328afc4562f0b4ada7618a84e # v2.10.4
+        with:
+          disable-sudo: true
+          egress-policy: audit
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_wrapper: false
+
+      # Apply the base branch's infra (offline) so the PR plan shows a real
+      # diff — updates, replacements, and deletions, not just creates.
+      - name: Establish baseline state from the base branch
+        run: |
+          set -euo pipefail
+          git worktree add /tmp/base "origin/${{ github.base_ref }}"
+          if [ -d /tmp/base/infra ]; then
+            ( cd /tmp/base/infra
+              terraform init -input=false -no-color
+              terraform apply -auto-approve -input=false -no-color )
+            cp /tmp/base/infra/terraform.tfstate infra/terraform.tfstate
+          fi
+
+      - name: Plan the pull request
+        working-directory: infra
+        run: |
+          set -euo pipefail
+          terraform init -input=false -no-color
+          terraform plan -input=false -no-color -refresh=false -out=tfplan
+          terraform show -json tfplan > plan.json
+
+      - name: Score the plan
+        uses: nandotorres/terraform-plan-verdict@main
+        with:
+          plan-json: infra/plan.json
+          provider: rules
+          comment: true
+          labels: true
+          fail-on: critical
