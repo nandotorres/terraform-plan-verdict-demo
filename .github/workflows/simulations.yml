@@ -65,3 +65,5 @@ jobs:
           labels: false
           summary: true
           fail-on: none
+
+# re-run against v0=v0.1.0 (NDJSON support)
